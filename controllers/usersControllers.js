@@ -21,26 +21,23 @@ export const userCreate = async (req, res) => {
             res.status(401).json("All Inputs is required");
         }
 
-        try {
-            // Check if user with the same email already exists
-            const existingUser = await users.findOne({ email: email });
+        // Check if user with the same email already exists
+        const existingUser = await users.findOne({ email: email });
 
-            if (existingUser) {
-                res.status(401).json("This user already exist in our databse");
-            } else {
-                // Create a new user
-                const datecreated = moment(new Date()).format("YYYY-MM-DD hh:mm:ss");
-
-                const newUser = new users({
-                    fname, lname, email, mobile, gender, location, status, profile: file, datecreated,
-                });
-
-                await newUser.save();
-                res.status(200).json(newUser);
-            }
-        } catch (error) {
-            res.status(401).json({ error: error.message });
+        if (existingUser) {
+            return res.status(409).json({ error: "User already exists with the same email" });
         }
+
+        // Create a new user
+        const datecreated = moment(new Date()).format("YYYY-MM-DD hh:mm:ss");
+
+        const newUser = new users({
+            fname, lname, email, mobile, gender, location, status, profile: file, datecreated,
+        });
+
+        await newUser.save();
+        res.status(201).json(newUser);
+
     } catch (error) {
         res.status(500).send({
             success: false,
@@ -100,11 +97,11 @@ export const singleUserGet = async (req, res) => {
         // Find user by ID
         const userData = await users.findOne({ _id: id });
 
-        if (userData) {
-            res.status(200).json(userData);
-        } else {
+        if (!userData) {
             res.status(404).json({ message: "User not found" });
         }
+
+        res.status(200).json(userData);
     } catch (error) {
         res.status(500).send({
             success: false,
@@ -128,7 +125,7 @@ export const userEdit = async (req, res) => {
         const existingUser = await users.findById(id);
 
         if (!existingUser) {
-            return res.status(404).json({ message: "User not found" });
+            res.status(404).json({ message: "User not found" });
         }
 
         const updateUser = await users.findByIdAndUpdate(
